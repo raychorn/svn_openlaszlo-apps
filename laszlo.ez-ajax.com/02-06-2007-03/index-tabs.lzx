@@ -1,0 +1,260 @@
+<!DOCTYPE canvas SYSTEM "http://laszlosystems.com/lps/tools/lzx.dtd">
+
+<canvas width="770" height="100%" bgcolor="#53A9FF" fontsize="8" proxied="false">
+
+    <font name="smallfont" src="verity/verity9.ttf"/>
+
+    <include href="resources.lzx"/>
+    <include href="clock/clock.lzx"/>
+    <include href="classlib.lzx"/>
+
+	<bluestyle name="bluecolors"/>
+	<silverstyle name="silvercolors"/>
+
+	<attribute name="titleText" value="+++" required="false" type="string"/>
+
+	<dataset name="myContent" ondata="Debug.write('got myContent data', this)" onerror="Debug.write('got myContent error', this)" ontimeout="Debug.write('got myContent timeout', this)" type="http" src="content.jsp" />
+
+	<datapointer xpath="myContent:/*">
+		<method event="ondata">
+		    Debug.write('got datapointer data', this);
+		</method>
+		<method event="onerror">
+		    Debug.write('got datapointer error', this);
+		</method>
+		<method event="ontimeout">
+		    Debug.write('got datapointer timeout', this);
+		</method>
+	</datapointer>
+
+	<script>
+	<![CDATA[
+		Debug.write('debug test', this);
+		canvas['bluecolors'].setAttribute("isdefault", true);
+	]]>
+	</script>
+
+    <font name="Helmet">
+        <face src="helmetr.ttf" />
+        <face src="helmetb.ttf"  style="bold" />
+    </font>
+		
+    <dataset name="cities">
+        <cities>
+        <city x="36" y="79" labelposition="2" timezoneoffset="-8"
+                  dst_start="3,6,2,0" dst_end="9,26,2,0">
+            <name>San Francisco</name>
+        </city>
+        </cities>
+    </dataset>
+
+    <splash persistent="false">
+        <view resource="images/loading_bg.swf" />
+        <view name="splash_anim" ratio="0.5" 
+              resource="images/loading_anim.swf" />
+    </splash>
+
+    <view width="${parent.width}">
+
+        <view id="_headerImage" resource="header" width="${parent.width}" stretches="both">
+            <method event="onclick">
+                LzBrowser.loadURL("http://www.ez-ajax.com", "_blank");
+            </method>
+        </view>
+		
+		<view x="${_headerImage.width - this.width - 15}" y="-5" width="${this.height}" height="${_headerImage.height + 10}">
+		    <!-- SECONDTIMER: an object that sends out an 'onsecond' event -->
+		    <node id="secondtimer" >
+		        <!-- trigger the initial animation on the oninit of the canvas.
+		             this helps in the krank process so that the initial time that the app
+		             get's is not stored in internal variables causing two animations to occur. -->
+		        <method event="oninit" reference="canvas">
+		           this.del = new LzDelegate ( this, "clockTick" );
+		           LzTimer.addTimer( this.del, 1000 );
+		         </method>
+		        <method name="clockTick" >
+		           this.onsecond.sendEvent();
+		           LzTimer.addTimer( this.del, 1000 );
+		        </method>
+		    </node>
+
+		    <simplelayout axis="x" inset="8"/>
+		    <simplelayout axis="y" inset="8"/>
+		    
+		    <clock datapath="cities:/cities/city[1]" width="${parent.width}" height="${parent.height}" stretches="both">
+		
+		        <!-- Create a date in the current year -->
+		        <method name="makeDate" args="dateparts">
+		            var currentYear = new Date();
+		            currentYear = 1900 + currentYear.getYear();
+		
+		            // dateparts is month,day,hours,mins
+		            var datepartsarray = dateparts.split( ',' );
+		
+		            return new Date( currentYear,
+		                             datepartsarray[0],
+		                             datepartsarray[1],
+		                             datepartsarray[2],
+		                             datepartsarray[3] );
+		        </method>
+		
+		        <!-- Data has been received so process it -->
+		        <method  event="ondata">
+		            <![CDATA[
+		            // Now set the timezone for the city
+		            this.timezoneoffset = (1*this.datapath.xpathQuery('@timezoneoffset'));
+		            this.dst_start = this.datapath.xpathQuery('@dst_start');
+		            this.dst_end = this.datapath.xpathQuery('@dst_end');
+		            var cd = new Date();
+		            var currentGMTDate = cd.getTime() + ( 1000 * 60 * cd.getTimezoneOffset() );
+		
+		            // Adjust time for city's offset from GMT.
+		            var localDate = currentGMTDate + ( this.timezoneoffset * 60 * 60 * 1000 );
+		
+		            // Are we in Daylight Savings Time (DST)?
+		            this.isDST = false;
+		            var dstStart = this.makeDate( this.dst_start );
+		            var dstEnd = this.makeDate( this.dst_end );
+		            if ( (localDate > dstStart.getTime()) && (localDate < dstEnd.getTime()) ) {
+		                this.isDST = true;
+		            }
+		            // Southern hemisphere - invert DST
+		            if ( dstStart.getMonth() > dstEnd.getMonth() ) {
+		                this.isDST = !true;
+		            }
+		            
+		             var myOffset = this.timezoneoffset;
+		            if ( this.isDST ) { // in daylight savings time
+		                myOffset += 1;
+		            }
+		            this.setTimeZone( myOffset );
+		           ]]>
+		        </method>
+		    </clock>
+		</view>
+
+        <view id="viewTabs" align="left" x="10" y="${_headerImage.height + 10}" height="${parent.height}" font="Arial,Helvetica" fontsize="11" bgcolor="${parent.bgcolor}">
+           <tabs bgcolor="${parent.bgcolor}">
+                <tabpane selected="true" bgcolor="${parent.bgcolor}">Product Info
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_whatsNew" width="65" height="50" y="15" text="What's New" text_y="30" font="smallfont">
+						<view resource="icons/large-icons.gif" x="15" y="5"/>
+						<method event="onclick">
+							windowText.setVisible(true);
+							canvas.setAttribute("titleText", "Product Info :: " + this.text);
+							var dsKeyword = canvas.datasets.myContent;
+							var qsKeyword = "id=" + this.id;
+							dsKeyword.setQueryString(qsKeyword);
+							dsKeyword.doRequest();
+						</method>
+					</button>
+  
+					<button id="btn_productInfo" width="65" height="50" x="${btn_whatsNew.width+btn_whatsNew.x+(parent.width / 5)}" y="${btn_whatsNew.y}" text="Product Info" text_y="30" font="smallfont">
+						<view resource="icons/computer.gif" x="15" y="5"/>
+						<method event="onclick">
+							windowText.setVisible(true);
+							canvas.setAttribute("titleText", "Product Info :: " + this.text);
+							var dsKeyword = canvas.datasets.myContent;
+							var qsKeyword = "id=" + this.id;
+							dsKeyword.setQueryString(qsKeyword);
+							dsKeyword.doRequest();
+						</method>
+					</button>
+
+					<button id="btn_demosTutorials" width="65" height="55" x="${btn_productInfo.width+btn_productInfo.x+(parent.width / 5)}" y="${btn_whatsNew.y}" text="Demos" text_y="35" font="smallfont">
+						<view resource="icons/run-software.gif" x="15" y="5"/>
+						<method event="onclick">
+							windowText.setVisible(true);
+							canvas.setAttribute("titleText", "Product Info :: " + this.text);
+							var dsKeyword = canvas.datasets.myContent;
+							var qsKeyword = "id=" + this.id;
+							dsKeyword.setQueryString(qsKeyword);
+							dsKeyword.doRequest();
+						</method>
+					</button>
+
+					<button id="btn_featuresChart" width="65" height="55" x="${btn_demosTutorials.width+btn_demosTutorials.x+(parent.width / 5)}" y="${btn_whatsNew.y}" text="Features" text_y="35" font="smallfont">
+						<view resource="icons/notes.gif" x="15" y="5"/>
+						<method event="onclick">
+							windowText.setVisible(true);
+							canvas.setAttribute("titleText", "Product Info :: " + this.text);
+							var dsKeyword = canvas.datasets.myContent;
+							var qsKeyword = "id=" + this.id;
+							dsKeyword.setQueryString(qsKeyword);
+							dsKeyword.doRequest();
+						</method>
+					</button>
+                </tabpane>
+                <tabpane>JSON &amp; Web 2.0
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_jsonSupport" width="75" height="55" x="${(parent.width / 2) - (this.width * 2) - 15}" y="15" text="JSON Support" text_y="35" font="smallfont">
+						<view resource="icons/network-2.gif" x="15" y="5"/>
+					</button>
+
+					<button id="btn_yahooSearch" width="170" height="55" x="${parent.width - btn_jsonSupport.x - this.width}" y="${btn_jsonSupport.y}" text="Yahoo Search using Web 2.0/JSON" text_y="35" font="smallfont">
+						<view resource="icons/yahoo-logo2.gif" x="2" y="0"/>
+					</button>
+                </tabpane>
+                <tabpane>Installation, How-To
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_installation" width="75" height="55" x="${(parent.width / 2) - this.width - 15}" y="15" text="Installation" text_y="35" font="smallfont">
+						<view resource="icons/install-software.gif" x="15" y="5"/>
+					</button>
+                </tabpane>
+                <tabpane>Sample Apps
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_dojoSampleApps" width="75" height="40" x="${(parent.width / 2) - (this.width * 2) - 15}" y="15" text="Dojo Samples" text_y="10" font="smallfont">
+					</button>
+
+					<button id="btn_waferPrototype" width="130" height="85" x="${parent.width - btn_jsonSupport.x - this.width}" y="${btn_dojoSampleApps.y}" text="Wafer Analysis Prototype" text_y="65" font="smallfont">
+						<view resource="icons/wafers.gif" x="20" y="5"/>
+					</button>
+                </tabpane>
+                <tabpane>Docs &amp; Downloads
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_articlesHelp" width="120" height="55" x="${this.width / 2}" y="15" text="Articles, Whitepapers" text_y="35" font="smallfont">
+						<view resource="icons/help.gif" x="15" y="5"/>
+					</button>
+
+					<button id="btn_downloads" width="65" height="55" x="${btn_articlesHelp.width+btn_articlesHelp.x+(parent.width / 4)}" y="${btn_articlesHelp.y}" text="Downloads" text_y="35" font="smallfont">
+						<view resource="icons/update-software.gif" x="15" y="5"/>
+					</button>
+
+					<button id="btn_downloadDocs" width="65" height="55" x="${btn_downloads.width+btn_downloads.x+(parent.width / 4)}" y="${btn_downloads.y}" text="Docs" text_y="35" font="smallfont">
+						<view resource="icons/documents.gif" x="15" y="5"/>
+					</button>
+                </tabpane>
+                <tabpane>Runtime Licenses
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_runtimeLicenses" width="90" height="55" x="${(parent.width / 2) - this.width - 15}" y="15" text="Manage Licenses" text_y="35" font="smallfont">
+						<view resource="icons/access-2.gif" x="15" y="5"/>
+					</button>
+                </tabpane>
+                <tabpane>Support
+                    <simplelayout spacing="10" inset="10"/>
+					<button id="btn_contactUs" width="70" height="65" x="${(parent.width / 2) - (this.width * 2) - 15}" y="15" text="Contact Us" text_y="45" font="smallfont">
+						<view resource="icons/icon_email.gif" x="5" y="0"/>
+					</button>
+
+					<button id="btn_supportForum" width="80" height="70" x="${parent.width - btn_contactUs.x - this.width}" y="${btn_contactUs.y}" text="Support Forum" text_y="50" font="smallfont">
+						<view resource="icons/icon_users.gif" x="5" y="5"/>
+					</button>
+                </tabpane>
+            </tabs>
+		</view>
+				
+        <view id="windowText" height="${viewTabs.height}" width="${parent.width - 40}" x="10" y="${_headerImage.height + 160}" font="Arial,Helvetica" fontsize="11" bgcolor="#787878" visible="false">
+	        <simplelayout axis="y"/>
+	
+	        <view id="viewTitle" height="20" bgcolor="#878787" width="${parent.width}">
+	            <text id="titleText" valign="middle" x="5" width="${parent.width}" text="${canvas.titleText}"></text>
+	        </view>
+	
+	        <view height="1" width="${this.parent.width}" bgcolor="#787878"/>
+
+            <view datapath="myContent:/content/node/" height="${parent.height - viewTitle.height}" bgcolor="#c0c0c0" width="${parent.width}">
+                <text datapath="@dtext" width="${parent.width}" />
+            </view> 
+	    </view>
+	</view>
+</canvas>

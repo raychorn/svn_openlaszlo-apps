@@ -1,0 +1,24 @@
+<library>
+
+    <resource name="header" src="images/laszlo-header-1.jpg"/>
+
+    <resource name="loading_anim" src="images/loading_anim.swf" />
+
+    <resource name="slider_product">
+        <frame src="images/slider_productinfo_norm.jpg"/>
+        <frame src="images/slider_productinfo_roll.jpg"/>
+        <frame src="images/slider_productinfo_down.jpg"/>
+        <frame src="images/slider_productinfo_norm2.jpg"/>
+        <frame src="images/slider_productinfo_roll2.jpg"/>
+        <frame src="images/slider_productinfo_down2.jpg"/>
+    </resource>
+
+    <resource name="slider_drag">
+        <frame src="images/slider_drag_norm.swf"/>
+        <frame src="images/slider_drag_roll.swf"/>
+        <frame src="images/slider_drag_down.swf"/>
+    </resource>
+
+    <resource name="divider_panel" src="images/divider_panel.swf"/>
+
+</library>

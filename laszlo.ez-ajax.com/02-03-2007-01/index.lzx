@@ -1,0 +1,26 @@
+<!DOCTYPE canvas SYSTEM "http://laszlosystems.com/lps/tools/lzx.dtd">
+
+<canvas width="770" height="100%" bgcolor="#53A9FF" fontsize="8">
+
+    <include href="resources.lzx"/>
+    <include href="classlib.lzx"/>
+
+    <view width="${parent.width}">
+
+        <view id="_headerImage" resource="header" width="${parent.width}" stretches="both">
+            <method event="onclick">
+                LzBrowser.loadURL("http://www.ez-ajax.com", "_blank");
+            </method>
+        </view>
+
+        <view align="right" height="${parent.height}" font="Arial,Helvetica" fontsize="11">
+        	<simplelayout axis="x"/>
+
+            <vtabpanel tabresource="slider_product">
+                <view width="${parent.width+50}" height="${canvas.height - _headerImage.height}">
+                    <view bgcolor="${parent.bgcolor}" y="0" height="${parent.height-1}" width="${parent.width}"/>
+                </view>
+            </vtabpanel>
+        </view>
+	</view>
+</canvas>
